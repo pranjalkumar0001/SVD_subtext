@@ -1,0 +1,7 @@
+name: svd-project
+channels:
+  - defaults
+dependencies:
+  - python=3.13
+  - numpy
+prefix: /Users/pranjalkumar/miniconda3/envs/svd-project
