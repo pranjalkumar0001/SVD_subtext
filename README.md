@@ -13,8 +13,9 @@ Linear Algebra and Its Applications at BITS Pilani, Goa Campus.
 
 ## Current Status
 
-Environment setup is in progress. The SVD implementation, text pipeline,
-and experiments are not yet complete.
+Environment setup is completed.
+SVD implementation in progress
+Text pipeline,and experiments are not yet complete.
 
 ## Objectives
 
