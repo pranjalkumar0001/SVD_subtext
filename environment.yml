@@ -1,7 +1,12 @@
 name: svd-project
+
 channels:
   - defaults
+
 dependencies:
   - python=3.13
-  - numpy
-prefix: /Users/pranjalkumar/miniconda3/envs/svd-project
+  - numpy>=2.1,<3
+  - matplotlib>=3.9.2,<4
+  - pytest>=8.3.3,<10
+  - ipykernel>=6.29.5,<8
+  - pip
