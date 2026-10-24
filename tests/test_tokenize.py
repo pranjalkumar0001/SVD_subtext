@@ -2,7 +2,6 @@ import pytest
 
 from src.tokenizer import tokenize
 
-
 @pytest.mark.parametrize(
     "text, expected",
     [
@@ -13,7 +12,7 @@ from src.tokenizer import tokenize
         ("robot,sensor", ["robot", "sensor"]),
         ("", []),
         ("123 !!!", []),
-        ("robot robot", ["robot", "robot"]),
+        ("robot robot ", ["robot", "robot"]),
     ],
 )
 def test_tokenize(text, expected):
