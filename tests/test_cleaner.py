@@ -25,6 +25,26 @@ from src.cleaner import clean_text
             "Special characters !@#$%^&*() should be removed.",
             "special characters should be removed",
         ),
+        (
+            "robot,sensor",
+            "robot sensor"
+        ),
+        (
+            "robot/motor",
+            "robot motor"
+        ),
+        (
+            "HTTP://example.com robot",
+            "robot"
+        ),
+        (
+            "httpology robot",
+            "httpology robot"
+        ),
+        (
+            "",
+            ""
+        ),
     ]
     )
 def test_clean_text(text, expected):

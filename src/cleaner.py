@@ -14,13 +14,13 @@ def clean_text(text: str) -> str:
         raise TypeError("Input must be a string.")
 
     # Remove URLs
-    text = re.sub(r"http\S+|www\S+|https\S+", "", text, flags=re.MULTILINE)
+    text = re.sub(r"\b(?:https?://|www\.)\S+", " ", text, flags=re.IGNORECASE)
 
     # Remove email addresses
-    text = re.sub(r"\S+@\S+", "", text)
+    text = re.sub(r"\S+@\S+", " ", text)
 
     # Remove unwanted characters (keeping only alphanumeric and spaces)
-    text = re.sub(r"[^a-zA-Z0-9\s]", "", text)
+    text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
 
     # Normalize whitespace
     text = re.sub(r"\s+", " ", text).strip()
