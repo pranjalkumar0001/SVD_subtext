@@ -45,6 +45,10 @@ from src.cleaner import clean_text
             "",
             ""
         ),
+        (
+            "robot@home sensor",
+            "robot home sensor"
+        ),
     ]
     )
 def test_clean_text(text, expected):
