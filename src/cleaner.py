@@ -17,7 +17,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r"\b(?:https?://|www\.)\S+", " ", text, flags=re.IGNORECASE)
 
     # Remove email addresses
-    text = re.sub(r"\S+@\S+", " ", text)
+    text = re.sub(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b"," ",text,flags=re.IGNORECASE)
 
     # Remove unwanted characters (keeping only alphanumeric and spaces)
     text = re.sub(r"[^a-zA-Z0-9\s]", " ", text)
