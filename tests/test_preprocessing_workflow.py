@@ -1,7 +1,7 @@
 import numpy as np
 
 from src.data_loader import load_txt_documents
-from src.preprocessing import *
+from src.preprocessing import build_count_matrix, compute_tfidf
 
 
 def test_complete_preprocessing_workflow(tmp_path):
