@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.tfidf import compute_tfidf
+from src.preprocessing import compute_tfidf
 
 
 def test_tfidf_values():

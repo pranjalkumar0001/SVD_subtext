@@ -1,6 +1,6 @@
 import pytest
 
-from src.cleaner import clean_text
+from src.preprocessing import clean_text
 
 @pytest.mark.parametrize(
     "text, expected",

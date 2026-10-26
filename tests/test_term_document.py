@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.term_doc import build_count_matrix
+from src.preprocessing import build_count_matrix
 
 
 def test_counts_and_labels():

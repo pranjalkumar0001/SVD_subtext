@@ -1,6 +1,6 @@
 import pytest
 
-from src.tokenizer import tokenize
+from src.preprocessing import tokenize
 
 @pytest.mark.parametrize(
     "text, expected",
