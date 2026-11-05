@@ -105,6 +105,7 @@ def svd_from_gram(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarra
     # Restore singular values to the original scale.
     with np.errstate(over="ignore"):
         s = s_scaled * scale
+        s= np.diag(s)
 
     if not np.all(np.isfinite(s)):
         raise FloatingPointError(
