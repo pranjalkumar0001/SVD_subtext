@@ -47,7 +47,7 @@ def svd_from_gram(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarra
     if scale == 0:
         return (
             np.empty((m, 0), dtype=np.float64),
-            np.empty(0, dtype=np.float64),
+            np.empty((0, 0), dtype=np.float64),
             np.empty((0, n), dtype=np.float64),
         )
 
@@ -105,11 +105,11 @@ def svd_from_gram(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarra
     # Restore singular values to the original scale.
     with np.errstate(over="ignore"):
         s = s_scaled * scale
-        s= np.diag(s)
+        Sigma = np.diag(s)
 
     if not np.all(np.isfinite(s)):
         raise FloatingPointError(
             "Singular values exceed the float64 numerical range."
         )
 
-    return U, s, V.T
+    return U, Sigma, V.T
