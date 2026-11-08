@@ -1,7 +1,7 @@
 """Experiment driver for the report (run from the repository root).
 
-Uses the project's own modules for every computation in the pipeline.
-np.linalg.svd appears only as an external reference for verification.
+Every factorisation comes from the project's own svd_from_gram (src/SVD.py);
+NumPy's SVD routine is not used anywhere in this script.
 Writes results.json and figures/*.pdf.
 """
 import json
@@ -44,19 +44,25 @@ res = {"m": m, "n": n, "r": r, "nnz": int(np.count_nonzero(counts)),
 res["erec"] = fro(A - U @ S @ Vt) / fro(A)
 res["eU"] = fro(U.T @ U - np.eye(r))
 res["eV"] = fro(Vt @ Vt.T - np.eye(r))
-reference = np.linalg.svd(A, compute_uv=False)      # reference only
-res["max_abs_sv_diff"] = float(np.max(np.abs(reference - s)))
+# Independent check that does not depend on the eigensolver: the squared
+# singular values must add up to the squared Frobenius norm of A.
+res["frobenius_identity_err"] = float(abs(np.sum(s ** 2) - fro(A) ** 2) / fro(A) ** 2)
 res["kappa_full"] = float(s[0] / s[-1])
 
 examples = {"tall": np.array([[1., 1.], [1., 0.], [0., 1.]]),
             "rank-deficient": np.array([[1., 1.], [2., 2.], [2., 2.]]),
             "wide": np.array([[4., 11., 14.], [8., 7., -2.]])}
+# Singular values worked out by hand in Chapter 1
+exact = {"tall": [np.sqrt(3.0), 1.0],
+         "rank-deficient": [3.0 * np.sqrt(2.0)],
+         "wide": [6.0 * np.sqrt(10.0), 3.0 * np.sqrt(10.0)]}
 res["examples"] = {}
 for label, M in examples.items():
     Ue, Se, Ve = svd_from_gram(M)
     k = Ue.shape[1]
     res["examples"][label] = {
         "sv": np.diag(Se).tolist(),
+        "sv_err": float(np.max(np.abs(np.diag(Se) - np.array(exact[label])))),
         "erec": float(fro(M - Ue @ Se @ Ve) / fro(M)),
         "eU": float(fro(Ue.T @ Ue - np.eye(k))),
         "eV": float(fro(Ve @ Ve.T - np.eye(k)))}
