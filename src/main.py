@@ -25,6 +25,11 @@ def main() -> None:
         default=0.90,
         help="Energy target for automatic k selection (default: 0.90).",
     )
+    parser.add_argument(
+    "--show-vocab",
+    action="store_true",
+    help="Print the vocabulary with its matrix row indices."
+    )
     args = parser.parse_args()
 
     try:
@@ -34,6 +39,12 @@ def main() -> None:
             raise ValueError("Provide at least two TXT documents to compare.")
 
         counts, vocabulary, names = build_count_matrix(documents)
+        if args.show_vocab:
+            print(f"\nVocabulary: {len(vocabulary)} terms")
+            for row, word in enumerate(vocabulary):
+                print(f"{row:4d}: {word}")
+            print()
+
         tfidf, _ = compute_tfidf(counts)
 
         U, Sigma, Vt = svd_from_gram(tfidf)
