@@ -22,8 +22,8 @@ from src.similarity import (
     retained_condition_number,
 )
 
-DATA = "Data/Samples"
-FIG = Path("figures")
+DATA = "Data/LongSamples"
+FIG = Path("figures/experiment2")
 FIG.mkdir(exist_ok=True)
 fro = np.linalg.norm
 
