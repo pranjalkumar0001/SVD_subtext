@@ -2,7 +2,7 @@
 
 Every factorisation comes from the project's own svd_from_gram (src/SVD.py);
 NumPy's SVD routine is not used anywhere in this script.
-Writes results.json and figures/*.pdf.
+Writes figures/results.json and figures/*.pdf.
 """
 import json
 from pathlib import Path
@@ -24,7 +24,7 @@ from src.similarity import (
 
 DATA = "Data/Samples"
 FIG = Path("figures/experiment1")
-FIG.mkdir(exist_ok=True)
+FIG.mkdir(parents=True, exist_ok=True)
 fro = np.linalg.norm
 
 # ---- Build the TF-IDF matrix and its SVD -------------------------------
@@ -105,7 +105,10 @@ for d in range(3):
 res["Z2"] = document_embeddings(S, Vt, 2).tolist()
 res["Z3"] = document_embeddings(S, Vt, 3).tolist()
 
-Path("results.json").write_text(json.dumps(res, indent=1))
+(FIG / "results.json").write_text(
+    json.dumps(res, indent=2) + "\n",
+    encoding="utf-8",
+)
 
 # ---- Figures ------------------------------------------------------------
 plt.rcParams.update({"font.size": 10, "font.family": "serif"})
