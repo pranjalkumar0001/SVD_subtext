@@ -2,7 +2,7 @@
 
 Every factorisation comes from the project's own svd_from_gram (src/SVD.py);
 NumPy's SVD routine is not used anywhere in this script.
-Writes figures/results.json and figures/*.pdf.
+Writes figures/experiment2/results.json and figures/experiment2/*.pdf.
 """
 import json
 from pathlib import Path

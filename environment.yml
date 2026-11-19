@@ -10,3 +10,4 @@ dependencies:
   - pytest>=8.3.3,<10
   - ipykernel>=6.29.5,<8
   - pip
+  - scikit-learn
