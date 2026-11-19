@@ -1,9 +1,12 @@
 \documentclass[12pt,a4paper]{report}
 
 \usepackage[utf8]{inputenc}
+\usepackage{lmodern}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{booktabs}
+\usepackage{tabularx}
+\setlength{\emergencystretch}{2em}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{caption}
@@ -79,7 +82,7 @@
 
 The singular value decomposition (SVD) factorizes every real rectangular matrix into two orthogonal matrices and a diagonal matrix of non-negative singular values, and it gives the best low-rank approximation of a matrix in the Frobenius and spectral norms. In this report, the SVD is developed from the maximum principle for quadratic forms, following the course lectures, and is then specialized to a construction that needs only the eigen decomposition of the smaller of the two Gram matrices $A\T A$ and $AA\T$. The mathematical treatment covers the orthogonality of the singular vectors, the Eckart--Young theorem, the energy retained by a truncation, and the numerical price paid for working with a Gram matrix.
 
-As an application, latent semantic analysis (LSA) is used to compare plain-text documents. A term--document matrix with TF-IDF weights is factorised with the Gram-matrix SVD, each document is represented by the coordinates $\Sigma_k V_k\T$, and cosine similarity in this reduced space is compared with cosine similarity of the original weighted vectors. Two five-document collections are examined. The first has 125 distinct terms and is deliberately short and synthetic; the second contains longer administrative-style passages and has 813 distinct terms. In the second collection, the 90\% energy rule selects $k=4$, retaining 93.99\% of the spectral energy. At $k=3$, the mean cosine of the two designated same-topic pairs is 0.9954, compared with 0.5135 for the eight different-topic pairs. At $k=2$, however, the treasury document becomes highly similar to both archive documents, illustrating that aggressive truncation can merge unrelated material. Both collections are small exploratory examples, not independent retrieval benchmarks.
+As an application, latent semantic analysis (LSA) compares plain-text documents using a custom TF-IDF matrix and reduced coordinates $\Sigma_kV_k\T$. Two five-document synthetic collections illustrate how rank truncation can strengthen same-topic similarities but also merge unrelated documents. A third experiment evaluates 250 real documents sampled from five categories of the 20 Newsgroups training subset. Its term--document matrix has 6,479 rows and numerical rank 250. Mean precision at five neighbours is 0.4976 for TF-IDF, compared with 0.2848, 0.4296, 0.4864 and 0.4928 for LSA ranks 5, 10, 20 and 50. Full-rank LSA recovers the baseline score. Thus no tested reduced rank improves mean precision on this sample. The evaluation excludes self-matches but searches the same collection used to fit TF-IDF and SVD; it is not a held-out query benchmark. The project demonstrates the construction, numerical verification and empirical limitations of Gram-matrix SVD for document similarity.
 
 \bigskip
 \noindent\textbf{Keywords:} singular value decomposition; Gram matrix; eigendecomposition; low-rank approximation; TF-IDF; cosine similarity; latent semantic analysis.
@@ -309,7 +312,7 @@ For a truncation I report $\kappa_{\mathrm{ret}}(k)=\sigma_1/\sigma_k$, the cond
 
 \subsection{Numerical considerations and the algorithm}\label{sec:numerics}
 
-Equation~\eqref{eq:kappasq} has a practical consequence. The eigenvalue routine works on the computed Gram matrix, whose rounding errors are of size about $\varepsilon\sigma_1^2$ in absolute terms, where $\varepsilon\approx2.2\times10^{-16}$ is the double-precision machine epsilon. An eigenvalue $\lambda_i=\sigma_i^2$ perturbed by $\delta\lambda$ changes $\sigma_i=\sqrt{\lambda_i}$ by roughly $\delta\lambda/(2\sigma_i)$, so the relative error in $\sigma_i$ is of order $\varepsilon(\sigma_1/\sigma_i)^2$. Small singular values are therefore resolved much less accurately than by an SVD routine that works on $A$ directly, such as the LAPACK routine behind NumPy's SVD function \cite{numpysvd,golubvanloan}. For the term--document matrices of this report the singular values are of similar size (Chapter~2), so the loss is negligible, but it would not be for a badly conditioned matrix.
+Equation~\eqref{eq:kappasq} has a practical consequence. The eigenvalue routine works on the computed Gram matrix, whose rounding errors are of size about $\varepsilon\sigma_1^2$ in absolute terms, where $\varepsilon\approx2.2\times10^{-16}$ is the double-precision machine epsilon. An eigenvalue $\lambda_i=\sigma_i^2$ perturbed by $\delta\lambda$ changes $\sigma_i=\sqrt{\lambda_i}$ by roughly $\delta\lambda/(2\sigma_i)$, so the relative error in $\sigma_i$ is of order $\varepsilon(\sigma_1/\sigma_i)^2$. Small singular values are therefore resolved much less accurately than by an SVD routine that works on $A$ directly, such as the LAPACK routine behind NumPy's SVD function \cite{numpysvd,golubvanloan}. The reported reconstruction and full-rank cosine checks are close to floating-point precision for the collections studied here. This empirical observation does not remove the accuracy limitation for ill-conditioned matrices.
 
 The program in Appendix~A proceeds as follows.
 \begin{enumerate}
@@ -476,12 +479,12 @@ Part (a) also explains a sanity check used below: with $k=r$ the two columns of 
 
 \subsection{Implementation and validation procedure}
 
-The application consists of five Python modules whose complete source is in Appendix~A. They are summarised in Table~\ref{tab:modules}. NumPy supplies array operations and \texttt{eigh}; the Matplotlib library is used only by the experiment driver to draw the figures.
+The application consists of five Python modules whose complete source is in Appendix~A. They are summarised in Table~\ref{tab:modules}. NumPy supplies array operations and \texttt{eigh}; Matplotlib generates the experiment figures. Scikit-learn is used to retrieve the real-text dataset, while TF-IDF and the SVD are computed by the project code.
 
 \begin{table}[H]
 \centering
 \caption{The program modules and their responsibilities.}\label{tab:modules}
-\begin{tabular}{@{}ll@{}}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
 \toprule
 Module & Responsibility\\
 \midrule
@@ -490,9 +493,11 @@ Module & Responsibility\\
 \texttt{SVD.py} & Compact SVD from Gram-matrix eigenpairs\\
 \texttt{similarity.py} & Rank selection, LSA coordinates, cosine similarity\\
 \texttt{main.py} & Command-line entry point\\
-\texttt{experiments.py} & Driver that produces the tables and figures of Section~\ref{sec:results}\\
+\texttt{experiment1.py} & Short synthetic collection and figures\\
+\texttt{experiment2.py} & Longer synthetic collection and figures\\
+\texttt{experiment\_big.py} & Real-text sample, precision evaluation and figures\\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 The workflow for a folder of documents is: (1) load and clean the texts; (2) build the count matrix $C$ and the TF-IDF matrix $A$ of~\eqref{eq:tfidf}; (3) compute the compact SVD of $A$; (4) choose $k$; (5) form $Z_k$; (6) compute the baseline and LSA cosine matrices; (7) report the diagnostics $E(k)$ and $\kappa_{\mathrm{ret}}(k)$.
@@ -507,7 +512,7 @@ and the singular values are checked against the identity $\sum_i\sigma_i^2=\norm
 
 \section{Numerical/Computational Demonstration and Results}\label{sec:results}
 
-All numbers in this section were produced by running the program of Appendix~A on the data described below; the experiment driver (Appendix~A.6) recomputes the numerical values used in the tables and generates the figures.
+All numbers in this section were produced by running the program of Appendix~A on the data described below; the three experiment drivers in Appendix~A reproduce the calculations and figures. The numerical tables report the committed result files; independent reruns may differ in rounding-level residuals.
 
 \subsection{Dataset description}\label{sec:dataset}
 
@@ -525,7 +530,7 @@ Document selection and topical grouping & Two passages about making coffee (01, 
 Length after cleaning & coffee: 40 tokens, cafe: 40 tokens, hike: 40 tokens, camping: 40 tokens, music: 40 tokens.\\
 Vocabulary and matrix size & 125 distinct terms; $A$ is $125\times5$ with 170 nonzero entries (27.2\%). The idf weights range from $1$ (a term in all five documents) to $1+\ln5\approx2.609$ (a term in one document).\\
 Preprocessing configuration & As in Section~2.3: cleaning, \texttt{[a-z]+} tokens, no stop-word removal or stemming; weights from~\eqref{eq:tfidf}. Rank chosen explicitly or by the default energy target $0.90$.\\
-Run environment and code revision & \runenv; repository commit \texttt{5d14138} \cite{repo} plus the driver \texttt{experiments.py} of Appendix~A.6.\\
+Recorded run environment & \runenv. The current experiment driver is \texttt{experiments/experiment1.py}; see Appendix~A and the repository \cite{repo}.\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -577,7 +582,7 @@ $k$ & $E(k)$ & $\norm{A-A_k}_F/\norm{A}_F$ & $\sqrt{1-E(k)}$ & $\sigma_1/\sigma_
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.95\textwidth]{spectrum.pdf}
+\includegraphics[width=0.95\textwidth]{figures/experiment1/spectrum.pdf}
 \caption{Left: the singular values of the TF-IDF matrix. Right: cumulative energy $E(k)$; the dashed line marks the default target $0.90$.}\label{fig:spectrum}
 \end{figure}
 
@@ -633,13 +638,13 @@ LSA, $k=5$ & 0.3697 & 0.1142\\
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{heatmaps.pdf}
+\includegraphics[width=\textwidth]{figures/experiment1/heatmaps.pdf}
 \caption{Pairwise cosine similarities for the five documents: TF-IDF baseline and LSA with $k=2,3,5$. Darker cells mean higher cosine.}\label{fig:heat}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.55\textwidth]{plane2d.pdf}
+\includegraphics[width=0.55\textwidth]{figures/experiment1/plane2d.pdf}
 \caption{The five documents as vectors in the $k=2$ LSA plane. Cosine similarity compares the angles between these arrows.}\label{fig:plane}
 \end{figure}
 
@@ -777,19 +782,85 @@ The two collections also show that the effect of truncation depends on the data.
 
 Both experiments use the same preprocessing, including no stop-word removal, stemming or minimum document-frequency filter. The leading singular directions therefore reflect common function words as well as topic-related vocabulary. Changing preprocessing would change the matrix and its spectrum, but those alternatives have not been tested here. Singular vectors are defined only up to sign (and rotations within repeated singular-value subspaces), so the interpretation of individual loading signs is not unique. The numerical values were produced with the implementation and environment described in the report; another platform or library version may change the final digits of rounding-level errors.
 
+\subsection{Third experiment: labelled 20 Newsgroups sample}
+\label{sec:precision}
+
+\subsubsection{Data and reproducible sampling}
+The real-text experiment uses \texttt{fetch\_20newsgroups} from scikit-learn \cite{newsgroups}. It selects the by-date training subset with \texttt{shuffle=False} and requests removal of headers, footers and quotes. These loader filters reduce obvious metadata cues; they should not be interpreted as a guarantee that every such cue is removed. Five categories are used: \texttt{comp.graphics}, \texttt{rec.autos}, \texttt{rec.sport.baseball}, \texttt{sci.med} and \texttt{sci.space}. After the project's cleaning and tokenisation, documents with fewer than 30 tokens are excluded. A NumPy random generator with seed 42 samples 50 eligible documents per category without replacement, giving 250 documents.
+
+The selected documents are written to \texttt{Data/20newsgroups/documents/}; \texttt{labels.csv} records filenames, categories and source identifiers. The loader then sorts filenames and the category labels are aligned to that order. The same custom preprocessing and raw-count TF-IDF formula as in the two earlier experiments are used, with no stop-word removal or column normalisation before SVD. The resulting matrix is $A\in\R^{6479\times250}$, so the engine solves a $250\times250$ Gram eigenproblem. Its numerical rank is 250.
+
+\subsubsection{Evaluation protocol}
+Let $q$ denote the number of retrieved neighbours and $k$ the retained SVD rank; these are different parameters. For document $i$, let $R_q(i)$ contain the indices of the $q$ highest-cosine other documents. With category label $y_i$,
+\[
+ P_i@q=\frac{1}{q}\sum_{j\in R_q(i)}\mathbf{1}[y_j=y_i],
+ \qquad \overline{P@q}=\frac{1}{N}\sum_{i=1}^{N}P_i@q.
+\]
+The experiment uses $q=5$. Self-matches are removed before ranking, and exact ties follow filename order through a stable sort. Negative similarities are ranked by their numerical value, not their absolute magnitude. A category match is a proxy for relevance. With 50 documents per category, each query has 49 relevant candidates, and precision at five can attain one.
+
+TF-IDF is compared against LSA at fixed ranks 5, 10, 20 and 50, with rank 250 included as a cosine-preservation check. The 90\% energy rule used by the CLI does not select these ranks. Every document serves as a query against the other 249 documents in the same fitted collection. No held-out queries or separate rank-selection split are used. This is an exploratory within-collection neighbour evaluation, not classification accuracy or evidence of generalisation to unseen queries.
+
+\subsubsection{Results and interpretation}
+\begin{table}[H]
+\centering
+\caption{Recorded results on the balanced 250-document sample. Energy is relative to the full retained numerical spectrum.}
+\label{tab:bigresults}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Representation & Mean precision@5 & Retained energy\\
+\midrule
+TF-IDF & 0.4976 & ---\\
+LSA k=5 & 0.2848 & 38.80\%\\
+LSA k=10 & 0.4296 & 49.16\%\\
+LSA k=20 & 0.4864 & 61.14\%\\
+LSA k=50 & 0.4928 & 76.89\%\\
+LSA k=250 & 0.4976 & 100.00\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No tested reduced rank exceeds the TF-IDF baseline. At rank 50, the score is 0.0048 below the baseline (0.48 percentage points), while each document uses 50 LSA coordinates instead of 6,479 term coordinates. This comparison concerns representation dimension only: no end-to-end runtime or peak-memory improvement was measured, and the implementation still forms dense matrices and computes the compact SVD before truncating. Full-rank LSA matches the TF-IDF precision, as predicted by the cosine-preservation identity.
+
+The committed run reports a relative reconstruction error of $1.8831\times10^{-15}$ and a maximum absolute difference between full-rank LSA and TF-IDF cosines of $2.2260\times10^{-14}$. The retained condition number at full rank is approximately 30.38. An independent rerun reproduced all six mean precision scores to four decimal places; small changes in floating-point residuals are expected across environments.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/experiment_big/precision_at_5.pdf}
+\caption{Mean precision at five neighbours for TF-IDF and the tested LSA ranks.}
+\label{fig:bigprecision}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/experiment_big/spectrum.pdf}
+\caption{Singular spectrum and cumulative energy for the 250-document collection. Retained energy and neighbour precision measure different properties.}
+\label{fig:bigspectrum}
+\end{figure}
+
+\subsubsection{Reproduction and scope}
+Run \texttt{python -m experiments.experiment\_big} from the repository root after installing the dependencies. The first run downloads the dataset; subsequent runs can use the local cache. The generated text collection is excluded from version control. Changing the sampling configuration requires moving any previous document folder aside because unexpected files are rejected rather than silently mixed into the new sample.
+
+The driver writes \texttt{figures/experiment\_big/results.json} and PDF/PNG figures. Its JSON contains sampling settings, category labels, document names, SHA-256 hashes of the input files, the numerical spectrum, precision for individual documents and categories, reconstruction diagnostics and package versions. The committed run records Python 3.13.16, NumPy 2.5.3, Matplotlib 3.11.2 and scikit-learn 1.9.1. These are recorded run versions, not exact installation requirements. The repository's environment files define its dependency requirements.
+
+Only one balanced sample and four reduced ranks were evaluated. There are no confidence intervals or repeated sampling trials, and the small rank-50 difference should not be interpreted as statistically established superiority or inferiority. The category labels are not query-specific relevance judgements. A stronger evaluation would use separate validation and query sets, multiple seeds, and additional retrieval measures.
+
 \chapter{Conclusions and Future Work}
 
-The project constructs the SVD through the eigendecomposition of the smaller Gram matrix and applies the resulting factors to document similarity. The Eckart--Young theorem justifies truncation as an optimal low-rank approximation in the Frobenius and spectral norms. Two five-document collections show that the effect of truncation depends on the data. In the first collection, the 90\% energy rule selects full rank, so it produces no dimensionality reduction. In the second collection, the same rule selects $k=4$, retaining 93.99\% of the spectral energy. Rank-three LSA gives a larger gap between the designated same-topic and different-topic mean cosine scores, but rank-two LSA makes the treasury document highly similar to both archive documents. These examples show both the potential and the limitations of low-rank document representations. They do not establish improved retrieval performance because the collections are small and have no independent relevance benchmark.
+The project constructs a compact SVD using the eigendecomposition of the smaller Gram matrix and applies it to document similarity. The Eckart--Young theorem explains the optimality of truncation for matrix reconstruction, while the experiments show why this does not imply optimal retrieval. In the two synthetic collections, truncation can increase same-topic cosines but can also merge unrelated documents. These examples illustrate the geometry rather than establish retrieval quality.
 
-The main limitations are the loss of word order, sensitivity to preprocessing and rank selection, and reduced numerical accuracy from forming a Gram matrix. Future work should evaluate documented collections with relevance labels, select the retained rank using validation data, and compare retrieval metrics against the TF-IDF baseline. Stop-word removal and alternative term weighting could be evaluated separately. Query vectors could be projected as $U_k\T q$, consistently with the document coordinates $\Sigma_k V_k\T$. A second SVD implementation based on bidiagonalisation or one-sided Jacobi rotations would allow comparison with a method that avoids forming a Gram matrix.
+The completed 20 Newsgroups experiment adds a labelled evaluation on 250 real documents. TF-IDF obtains mean precision@5 of 0.4976; the tested reduced LSA ranks give 0.2848, 0.4296, 0.4864 and 0.4928. Full-rank LSA reproduces the baseline. The principal empirical finding is therefore that reduced rank did not improve mean neighbour precision on this sample, although rank 50 preserved much of the baseline score in fewer coordinates. Reconstruction and full-rank cosine checks agree with the theoretical identities to near floating-point precision.
 
+The main limitations are the accuracy loss from forming Gram matrices, dense storage, the loss of word order, and sensitivity to preprocessing and retained rank. The labelled evaluation is within one fitted collection and uses one seed, so it does not establish performance on unseen queries. Future work should separate validation from evaluation, repeat sampling, examine stop-word removal and alternative weighting, and measure runtime and memory as well as retrieval quality. A direct SVD method such as bidiagonalisation or one-sided Jacobi rotations would provide a useful numerical comparison. New query vectors could be projected as $U_k\T q$ after using the fitted vocabulary and IDF weights.
+
+\section*{Code availability}
+The source repository is listed in \cite{repo}. Its code is distributed under the MIT License; the root \texttt{LICENSE} file contains the applicable terms and copyright notice. Third-party dependencies and the downloaded dataset retain their own applicable terms. The report's appendix reproduces the current implementation of the five core modules and all three experiment drivers. Unit-test source is omitted.
 
 \chapter*{Generative AI Usage Declaration}
 \addcontentsline{toc}{chapter}{Generative AI Usage Declaration}
 
 I declare the following use of Generative AI tools in the preparation of this project.
 
-\textbf{ChatGPT (OpenAI).} Used for conceptual clarification, test assistance, debugging and mathematical exposition. ChatGPT also generated all ten synthetic text documents used in Chapter~2: the five documents in the first collection and the five documents in the second collection. These documents are synthetic examples; they are not records collected from an institution and do not form an independent benchmark.
+\textbf{ChatGPT (OpenAI).} Used for conceptual clarification, test assistance, debugging, mathematical exposition, and report editing and formatting. ChatGPT also generated the ten synthetic text documents used in the first two experiments: the five documents in the first collection and the five documents in the second collection. These documents are synthetic examples; they are not records collected from an institution and do not form an independent benchmark. The third experiment uses existing 20 Newsgroups posts retrieved through scikit-learn, not AI-generated documents.
 
 \textbf{Claude (Anthropic).} Used to rewrite and restructure the earlier draft prepared on Google Docs into the present LaTeX report. The extent of this use is substantial drafting and editing assistance.
 
@@ -823,18 +894,22 @@ Cambridge University Press, 2008, Chapters 6 and 18.
 
 \bibitem{girdher} H. Girdher, ``TDM (Term Document Matrix) and DTM (Document Term Matrix),'' Analytics Vidhya, Medium, 30 July 2021. \url{https://medium.com/analytics-vidhya/tdm-term-document-matrix-and-dtm-document-term-matrix-8b07c58957e2}. Accessed 23 October 2026.
 
-\bibitem{repo} Pranjal Kumar, \emph{SVD Subtext}, GitHub repository, snapshot 5d14138, 2026. \url{https://github.com/pranjalkumar0001/SVD_subtext}.
+\bibitem{repo} Pranjal Kumar, \emph{SVD Subtext}, GitHub repository, 2026. \url{https://github.com/pranjalkumar0001/SVD_subtext}.
+
+\bibitem{newsgroups} Scikit-learn Developers, \texttt{fetch\_20newsgroups}, scikit-learn documentation. \url{https://scikit-learn.org/stable/modules/generated/sklearn.datasets.fetch_20newsgroups.html}. Accessed 19 November 2026.
 
 \end{thebibliography}
 
 \appendix
 \chapter{Programming Code}
-
-This appendix contains the complete source of the five program modules, as in the repository snapshot \cite{repo}, followed by the experiment driver that generates the results of Chapter~2. Test modules are omitted. The program needs Python 3 and NumPy ($\ge 2.1$); the driver also needs Matplotlib. The program is run from the repository root, for example
+This appendix contains the five core modules and all three experiment drivers from the project repository. Unit-test source is omitted. The Conda environment specifies Python 3.13; the dependencies include NumPy, Matplotlib, pytest and scikit-learn. The core application uses NumPy; Matplotlib supplies figures and scikit-learn supplies the real-text dataset. Run commands from the repository root:
 \begin{verbatim}
 python -m src.main Data/Samples --k 3
+python -m experiments.experiment1
+python -m experiments.experiment2
+python -m experiments.experiment_big
 \end{verbatim}
-and the driver with \texttt{python -m experiments.experiment1}.
+Each experiment writes results to its own subdirectory of \texttt{figures/}, so running one does not overwrite another experiment's JSON output.
 
 \section{Document loading}
 \noindent File: \texttt{src/data\_loader.py}
@@ -1252,6 +1327,11 @@ def main() -> None:
         default=0.90,
         help="Energy target for automatic k selection (default: 0.90).",
     )
+    parser.add_argument(
+    "--show-vocab",
+    action="store_true",
+    help="Print the vocabulary with its matrix row indices."
+    )
     args = parser.parse_args()
 
     try:
@@ -1261,6 +1341,12 @@ def main() -> None:
             raise ValueError("Provide at least two TXT documents to compare.")
 
         counts, vocabulary, names = build_count_matrix(documents)
+        if args.show_vocab:
+            print(f"\nVocabulary: {len(vocabulary)} terms")
+            for row, word in enumerate(vocabulary):
+                print(f"{row:4d}: {word}")
+            print()
+
         tfidf, _ = compute_tfidf(counts)
 
         U, Sigma, Vt = svd_from_gram(tfidf)
@@ -1315,14 +1401,14 @@ if __name__ == "__main__":
     main()
 \end{lstlisting}
 
-\section{Experiment driver}
-\noindent File: \texttt{experiments.py}
+\section{Experiment 1: short-document collection}
+\noindent File: \texttt{experiments/experiment1.py}
 \begin{lstlisting}
 """Experiment driver for the report (run from the repository root).
 
 Every factorisation comes from the project's own svd_from_gram (src/SVD.py);
 NumPy's SVD routine is not used anywhere in this script.
-Writes results.json and figures/*.pdf.
+Writes figures/experiment1/results.json and figures/experiment1/*.pdf.
 """
 import json
 from pathlib import Path
@@ -1343,8 +1429,8 @@ from src.similarity import (
 )
 
 DATA = "Data/Samples"
-FIG = Path("figures")
-FIG.mkdir(exist_ok=True)
+FIG = Path("figures/experiment1")
+FIG.mkdir(parents=True, exist_ok=True)
 fro = np.linalg.norm
 
 # ---- Build the TF-IDF matrix and its SVD -------------------------------
@@ -1425,7 +1511,10 @@ for d in range(3):
 res["Z2"] = document_embeddings(S, Vt, 2).tolist()
 res["Z3"] = document_embeddings(S, Vt, 3).tolist()
 
-Path("results.json").write_text(json.dumps(res, indent=1))
+(FIG / "results.json").write_text(
+    json.dumps(res, indent=2) + "\n",
+    encoding="utf-8",
+)
 
 # ---- Figures ------------------------------------------------------------
 plt.rcParams.update({"font.size": 10, "font.family": "serif"})
@@ -1467,42 +1556,522 @@ plt.tight_layout(); plt.savefig(FIG / "plane2d.pdf"); plt.close()
 print("done", res["suggest_k_90"], res["erec"])
 \end{lstlisting}
 
-
-
 \section{Experiment 2: longer-document collection}
-
-File: \texttt{experiments/experiment2.py}. This driver applies the same preprocessing and Gram-matrix SVD implementation to the five documents in \texttt{Data/LongSamples}. It records the reconstruction and orthogonality checks, singular values, retained-energy sweep, pairwise TF-IDF and LSA cosine similarities, group means, leading term loadings, and the coordinates used for the second collection's figures. It writes \texttt{results.json} and the figures in \texttt{figures/experiment2/}. The experiment uses \texttt{src.svd\_from\_gram}; NumPy's direct SVD routine is not used.
-
+\noindent File: \texttt{experiments/experiment2.py}
 \begin{lstlisting}
-# Core of experiments/experiment2.py
-docs = load_txt_documents("Data/LongSamples")
+"""Experiment driver for the report (run from the repository root).
+
+Every factorisation comes from the project's own svd_from_gram (src/SVD.py);
+NumPy's SVD routine is not used anywhere in this script.
+Writes figures/experiment2/results.json and figures/experiment2/*.pdf.
+"""
+import json
+from pathlib import Path
+
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+from src.data_loader import load_txt_documents
+from src.preprocessing import build_count_matrix, compute_tfidf
+from src.SVD import svd_from_gram
+from src.similarity import (
+    suggest_k,
+    document_embeddings,
+    cosine_similarity_matrix,
+    retained_condition_number,
+)
+
+DATA = "Data/LongSamples"
+FIG = Path("figures/experiment2")
+FIG.mkdir(parents=True, exist_ok=True)
+fro = np.linalg.norm
+
+# ---- Build the TF-IDF matrix and its SVD -------------------------------
+docs = load_txt_documents(DATA)
 counts, vocab, names = build_count_matrix(docs)
 A, idf = compute_tfidf(counts)
+m, n = A.shape
 U, S, Vt = svd_from_gram(A)
 s = np.diag(S)
 r = len(s)
+total = np.sum(s ** 2)
 
+res = {"m": m, "n": n, "r": r, "nnz": int(np.count_nonzero(counts)),
+       "singular": s.tolist()}
+
+# ---- Verification of the factorisation (Section 2.4.2) -----------------
+res["erec"] = fro(A - U @ S @ Vt) / fro(A)
+res["eU"] = fro(U.T @ U - np.eye(r))
+res["eV"] = fro(Vt @ Vt.T - np.eye(r))
+# Independent check that does not depend on the eigensolver: the squared
+# singular values must add up to the squared Frobenius norm of A.
+res["frobenius_identity_err"] = float(abs(np.sum(s ** 2) - fro(A) ** 2) / fro(A) ** 2)
+res["kappa_full"] = float(s[0] / s[-1])
+
+examples = {"tall": np.array([[1., 1.], [1., 0.], [0., 1.]]),
+            "rank-deficient": np.array([[1., 1.], [2., 2.], [2., 2.]]),
+            "wide": np.array([[4., 11., 14.], [8., 7., -2.]])}
+# Singular values worked out by hand in Chapter 1
+exact = {"tall": [np.sqrt(3.0), 1.0],
+         "rank-deficient": [3.0 * np.sqrt(2.0)],
+         "wide": [6.0 * np.sqrt(10.0), 3.0 * np.sqrt(10.0)]}
+res["examples"] = {}
+for label, M in examples.items():
+    Ue, Se, Ve = svd_from_gram(M)
+    k = Ue.shape[1]
+    res["examples"][label] = {
+        "sv": np.diag(Se).tolist(),
+        "sv_err": float(np.max(np.abs(np.diag(Se) - np.array(exact[label])))),
+        "erec": float(fro(M - Ue @ Se @ Ve) / fro(M)),
+        "eU": float(fro(Ue.T @ Ue - np.eye(k))),
+        "eV": float(fro(Ve @ Ve.T - np.eye(k)))}
+
+# ---- Effect of the retained rank (Section 2.4.3) -----------------------
+sweep = []
+for k in range(1, r + 1):
+    Ak = U[:, :k] @ S[:k, :k] @ Vt[:k, :]
+    energy = np.sum(s[:k] ** 2) / total
+    sweep.append({"k": k, "energy": float(energy),
+                  "rel_err": float(fro(A - Ak) / fro(A)),
+                  "sqrt_1_minus_E": float(np.sqrt(max(0.0, 1 - energy))),
+                  "kappa": retained_condition_number(S, k)})
+res["sweep"] = sweep
+res["suggest_k_90"] = suggest_k(S, 0.90)
+res["suggest_k_80"] = suggest_k(S, 0.80)
+
+# ---- Document similarity (Section 2.4.4) -------------------------------
 baseline = cosine_similarity_matrix(A)
-sims = {
-    k: cosine_similarity_matrix(document_embeddings(S, Vt, k))
-    for k in range(2, r + 1)
-}
-pairs = [(i, j) for i in range(len(names))
-         for j in range(i + 1, len(names))]
+sims = {k: cosine_similarity_matrix(document_embeddings(S, Vt, k))
+        for k in range(2, r + 1)}
+pairs = [(i, j) for i in range(n) for j in range(i + 1, n)]
+res["pairs"] = [{"a": names[i], "b": names[j], "tfidf": float(baseline[i, j]),
+                 **{f"k{k}": float(sims[k][i, j]) for k in sims}}
+                for i, j in pairs]
 
-# Reference grouping: shuttle {06, 07}, archive {08, 09};
-# treasury {10} is a singleton.
+# Reference grouping used only to summarise: coffee {01,02}, outdoors {03,04}, music {05}
 within = [(0, 1), (2, 3)]
-across = [pair for pair in pairs if pair not in within]
-
+across = [p for p in pairs if p not in within]
 def summarise(M):
-    return (
-        float(np.mean([M[i, j] for i, j in within])),
-        float(np.mean([M[i, j] for i, j in across]))
+    return (float(np.mean([M[i, j] for i, j in within])),
+            float(np.mean([M[i, j] for i, j in across])))
+res["group"] = {"tfidf": summarise(baseline),
+                **{f"k{k}": summarise(sims[k]) for k in sims}}
+
+# Leading term loadings of the first three left singular vectors
+for d in range(3):
+    idx = np.argsort(-np.abs(U[:, d]))[:8]
+    res[f"top_terms_dir{d + 1}"] = [(vocab[i], round(float(U[i, d]), 3)) for i in idx]
+res["Z2"] = document_embeddings(S, Vt, 2).tolist()
+res["Z3"] = document_embeddings(S, Vt, 3).tolist()
+
+(FIG / "results.json").write_text(
+    json.dumps(res, indent=2) + "\n",
+    encoding="utf-8",
+)
+
+# ---- Figures ------------------------------------------------------------
+plt.rcParams.update({"font.size": 10, "font.family": "serif"})
+short = [nm.replace(".txt", "").split("_", 1)[1] for nm in names]
+
+fig, ax = plt.subplots(1, 2, figsize=(7.2, 2.9))
+ax[0].plot(range(1, r + 1), s, "o-", color="black")
+ax[0].set_xlabel("index $i$"); ax[0].set_ylabel(r"$\sigma_i$")
+ax[0].set_title("Singular values of the TF-IDF matrix")
+ax[1].plot(range(1, r + 1), np.cumsum(s ** 2) / total, "s-", color="black")
+ax[1].axhline(0.9, ls="--", color="gray")
+ax[1].set_xlabel("retained rank $k$"); ax[1].set_ylabel("$E(k)$")
+ax[1].set_title("Cumulative energy")
+for a in ax:
+    a.set_xticks(range(1, r + 1)); a.grid(alpha=0.3)
+plt.tight_layout(); plt.savefig(FIG / "spectrum.pdf"); plt.close()
+
+fig, ax = plt.subplots(1, 4, figsize=(8.6, 2.6), sharey=True)
+panels = [(baseline, "TF-IDF"), (sims[2], "LSA $k=2$"),
+          (sims[3], "LSA $k=3$"), (sims[r], f"LSA $k={r}$")]
+for a, (M, t) in zip(ax, panels):
+    im = a.imshow(M, vmin=-0.2, vmax=1, cmap="gray_r"); a.set_title(t, fontsize=9)
+    a.set_xticks(range(n)); a.set_xticklabels(short, rotation=60, ha="right", fontsize=7)
+    a.set_yticks(range(n)); a.set_yticklabels(short, fontsize=7)
+fig.colorbar(im, ax=ax, fraction=0.02)
+plt.savefig(FIG / "heatmaps.pdf", bbox_inches="tight"); plt.close()
+
+Z = document_embeddings(S, Vt, 2)
+fig, a = plt.subplots(figsize=(3.6, 3.2))
+for j in range(n):
+    a.annotate("", xy=Z[:, j], xytext=(0, 0),
+               arrowprops=dict(arrowstyle="->", color="black"))
+    a.text(Z[0, j] * 1.06, Z[1, j] * 1.06, short[j], fontsize=8)
+lim = 1.35 * np.max(np.abs(Z))
+a.set_xlim(-lim, lim); a.set_ylim(-lim, lim); a.axhline(0, c="0.8"); a.axvline(0, c="0.8")
+a.set_xlabel("first LSA coordinate"); a.set_ylabel("second LSA coordinate")
+a.set_aspect("equal"); a.set_title("Documents in the $k=2$ LSA plane", fontsize=9)
+plt.tight_layout(); plt.savefig(FIG / "plane2d.pdf"); plt.close()
+print("done", res["suggest_k_90"], res["erec"])
+\end{lstlisting}
+
+\section{Experiment 3: real-text evaluation}
+\noindent File: \texttt{experiments/experiment\_big.py}
+The precision helper expects an integer cutoff. It checks the score-matrix shape, finite entries and cutoff range. Its current implementation does not explicitly reject Boolean cutoffs or normalise the exception for non-integer cutoffs. The experiment supplies the integer 5; stricter type validation is a remaining API improvement.
+
+\begin{lstlisting}
+"""Compare custom TF-IDF and Gram-matrix LSA on real text.
+
+Run from the repository root:
+    python -m experiments.experiment_big
+
+This evaluates neighbours within one fixed collection.
+It is not a held-out query retrieval experiment.
+"""
+
+import csv
+import hashlib
+import json
+import platform
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+import numpy as np
+import sklearn
+from sklearn.datasets import fetch_20newsgroups
+
+from src.data_loader import load_txt_documents
+from src.preprocessing import (
+    build_count_matrix,
+    clean_text,
+    compute_tfidf,
+    tokenize,
+)
+from src.SVD import svd_from_gram
+from src.similarity import (
+    cosine_similarity_matrix,
+    document_embeddings,
+    retained_condition_number,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+DATA_DIR = ROOT / "Data" / "20newsgroups"
+DOCUMENT_DIR = DATA_DIR / "documents"
+OUTPUT_DIR = ROOT / "figures" / "experiment_big"
+
+CATEGORIES = [
+    "comp.graphics",
+    "rec.autos",
+    "rec.sport.baseball",
+    "sci.med",
+    "sci.space",
+]
+
+SEED = 42
+DOCUMENTS_PER_CATEGORY = 50
+MIN_TOKENS = 30
+NEIGHBOURS = 5
+LSA_RANKS = [5, 10, 20, 50]
+
+
+def prepare_documents() -> dict[str, str]:
+    """Save a reproducible sample and return filename -> category labels."""
+    dataset = fetch_20newsgroups(
+        subset="train",
+        categories=CATEGORIES,
+        remove=("headers", "footers", "quotes"),
+        shuffle=False,
+        data_home=str(ROOT / ".cache" / "20newsgroups"),
     )
 
-# The driver also computes the singular-value/energy plots,
-# similarity heatmaps, and the two-dimensional LSA projection.
+    rng = np.random.default_rng(SEED)
+    selected = []
+
+    for category in CATEGORIES:
+        category_id = dataset.target_names.index(category)
+        candidates = np.flatnonzero(dataset.target == category_id)
+
+        # Remove documents that become too short after cleaning.
+        eligible = [
+            int(index)
+            for index in candidates
+            if len(tokenize(clean_text(dataset.data[index]))) >= MIN_TOKENS
+        ]
+
+        if len(eligible) < DOCUMENTS_PER_CATEGORY:
+            raise ValueError(
+                f"{category}: only {len(eligible)} eligible documents."
+            )
+
+        chosen = rng.choice(
+            eligible,
+            size=DOCUMENTS_PER_CATEGORY,
+            replace=False,
+        )
+
+        for index in sorted(chosen.tolist()):
+            source_id = Path(dataset.filenames[index]).name
+            filename = f"{category}__{source_id}.txt"
+            selected.append(
+                (filename, category, source_id, dataset.data[index])
+            )
+
+    DOCUMENT_DIR.mkdir(parents=True, exist_ok=True)
+    expected_names = {row[0] for row in selected}
+
+    # Prevent old samples from silently entering the experiment.
+    existing_names = {
+        path.name
+        for path in DOCUMENT_DIR.iterdir()
+        if path.is_file() and path.suffix.lower() == ".txt"
+    }
+
+    unexpected = existing_names - expected_names
+    if unexpected:
+        raise ValueError(
+            "The document folder contains files outside this sample. "
+            "Move the existing folder elsewhere before changing the "
+            f"sampling configuration: {DOCUMENT_DIR}"
+        )
+
+    labels = {}
+
+    with (DATA_DIR / "labels.csv").open(
+        "w", newline="", encoding="utf-8"
+    ) as file:
+        writer = csv.writer(file)
+        writer.writerow(["filename", "category", "source_id"])
+
+        for filename, category, source_id, text in selected:
+            (DOCUMENT_DIR / filename).write_text(text, encoding="utf-8")
+            writer.writerow([filename, category, source_id])
+            labels[filename] = category
+
+    return labels
+
+
+def precision_at_k(
+    similarities: np.ndarray,
+    labels: list[str],
+    k: int = 5,
+) -> np.ndarray:
+    """Return one precision@k value per document, excluding itself.
+
+    A neighbour is considered relevant when its category matches
+    the query document's category.
+    """
+    scores = np.asarray(similarities, dtype=np.float64)
+    labels_array = np.asarray(labels)
+    n = len(labels_array)
+
+    if scores.shape != (n, n):
+        raise ValueError("Expected an n-by-n similarity matrix.")
+
+    if not np.all(np.isfinite(scores)):
+        raise ValueError("Similarity scores must be finite.")
+
+    if not 1 <= k < n:
+        raise ValueError("k must be between 1 and n - 1.")
+
+    scores = scores.copy()
+    np.fill_diagonal(scores, -np.inf)
+
+    # Stable sorting resolves exact ties by document order.
+    neighbours = np.argsort(-scores, axis=1, kind="stable")[:, :k]
+    relevant = labels_array[neighbours] == labels_array[:, None]
+
+    return relevant.mean(axis=1)
+
+
+def summarise_scores(
+    scores: np.ndarray,
+    labels: list[str],
+) -> dict:
+    labels_array = np.asarray(labels)
+
+    return {
+        "mean_precision_at_5": float(np.mean(scores)),
+        "per_category_precision_at_5": {
+            category: float(np.mean(scores[labels_array == category]))
+            for category in CATEGORIES
+        },
+        "per_document_precision_at_5": scores.tolist(),
+    }
+
+
+def save_plots(singular_values: np.ndarray, results: list[dict]) -> None:
+    energy = (singular_values / singular_values[0]) ** 2
+    cumulative = np.cumsum(energy) / np.sum(energy)
+    indices = np.arange(1, len(singular_values) + 1)
+
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+    axes[0].semilogy(indices, singular_values)
+    axes[0].set_xlabel("Component")
+    axes[0].set_ylabel("Singular value")
+    axes[0].set_title("Retained singular spectrum")
+
+    axes[1].plot(indices, cumulative)
+    axes[1].axhline(0.90, color="gray", linestyle="--")
+    axes[1].set_xlabel("Retained rank")
+    axes[1].set_ylabel("Cumulative spectral energy")
+    axes[1].set_title("Energy relative to numerical spectrum")
+
+    for axis in axes:
+        axis.grid(alpha=0.25)
+
+    fig.tight_layout()
+    for extension in ("png", "pdf"):
+        fig.savefig(OUTPUT_DIR / f"spectrum.{extension}", dpi=180)
+    plt.close(fig)
+
+    fig, axis = plt.subplots(figsize=(8, 4))
+    names = [row["method"] for row in results]
+    values = [row["mean_precision_at_5"] for row in results]
+
+    bars = axis.bar(names, values)
+    axis.set_ylim(0, 1.08)
+    axis.set_ylabel("Mean precision@5")
+    axis.set_title("Same-category neighbours in the sampled collection")
+    axis.bar_label(bars, fmt="%.3f", padding=3)
+    axis.grid(axis="y", alpha=0.25)
+    axis.set_axisbelow(True)
+
+    fig.tight_layout()
+    for extension in ("png", "pdf"):
+        fig.savefig(OUTPUT_DIR / f"precision_at_5.{extension}", dpi=180)
+    plt.close(fig)
+
+
+def main() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    labels_by_name = prepare_documents()
+
+    documents = load_txt_documents(DOCUMENT_DIR)
+    counts, vocabulary, names = build_count_matrix(documents)
+    labels = [labels_by_name[name] for name in names]
+
+    A, _ = compute_tfidf(counts)
+    U, Sigma, Vt = svd_from_gram(A)
+
+    singular_values = np.diag(Sigma)
+    numerical_rank = len(singular_values)
+
+    if numerical_rank == 0:
+        raise ValueError("The collection has numerical rank zero.")
+
+    relative_energy = (singular_values / singular_values[0]) ** 2
+    total_energy = np.sum(relative_energy)
+
+    baseline = cosine_similarity_matrix(A)
+    baseline_scores = precision_at_k(baseline, labels, NEIGHBOURS)
+
+    results = [
+        {
+            "method": "TF-IDF",
+            "k": None,
+            **summarise_scores(baseline_scores, labels),
+        }
+    ]
+
+    # Include full numerical rank as a cosine-preservation check.
+    ranks = sorted(
+        {k for k in LSA_RANKS if k <= numerical_rank}
+        | {numerical_rank}
+    )
+
+    for k in ranks:
+        embeddings = document_embeddings(Sigma, Vt, k)
+        similarities = cosine_similarity_matrix(embeddings)
+        scores = precision_at_k(similarities, labels, NEIGHBOURS)
+
+        results.append(
+            {
+                "method": f"LSA k={k}",
+                "k": k,
+                "retained_energy": float(
+                    np.sum(relative_energy[:k]) / total_energy
+                ),
+                "retained_condition_number": retained_condition_number(
+                    Sigma, k
+                ),
+                **summarise_scores(scores, labels),
+            }
+        )
+
+        if k == numerical_rank:
+            full_rank_cosine_error = float(
+                np.max(np.abs(similarities - baseline))
+            )
+
+    output = {
+        "dataset": "20 Newsgroups, by-date training subset",
+        "evaluation": (
+            "Within-collection category-neighbour evaluation; "
+            "self-matches excluded; no held-out queries."
+        ),
+        "seed": SEED,
+        "categories": CATEGORIES,
+        "documents_per_category": DOCUMENTS_PER_CATEGORY,
+        "minimum_cleaned_tokens": MIN_TOKENS,
+        "removed_sections": ["headers", "footers", "quotes"],
+        "neighbours": NEIGHBOURS,
+        "document_names": names,
+        "labels": labels,
+        "matrix_shape": list(A.shape),
+        "numerical_rank": numerical_rank,
+        "singular_values": singular_values.tolist(),
+        "relative_reconstruction_error": float(
+            np.sqrt(np.sum((A - U @ Sigma @ Vt) ** 2))
+            / np.sqrt(np.sum(A ** 2))
+        ),
+        "full_rank_max_cosine_difference": full_rank_cosine_error,
+        "environment": {
+            "python": platform.python_version(),
+            "numpy": np.__version__,
+            "matplotlib": matplotlib.__version__,
+            "scikit_learn": sklearn.__version__,
+        },
+        "input_sha256": {
+            name: hashlib.sha256(
+                (DOCUMENT_DIR / name).read_bytes()
+            ).hexdigest()
+            for name in names
+        },
+        "results": results,
+    }
+
+    (OUTPUT_DIR / "results.json").write_text(
+        json.dumps(output, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+    save_plots(singular_values, results)
+
+    print(f"Documents: {len(names)}")
+    print(f"Vocabulary: {len(vocabulary)}")
+    print(f"Numerical rank: {numerical_rank}")
+    print("\nMethod          | Mean precision@5")
+    print("----------------|-----------------")
+
+    for row in results:
+        print(
+            f"{row['method']:<15} | "
+            f"{row['mean_precision_at_5']:.4f}"
+        )
+
+    print(
+        "\nFull-rank maximum cosine difference: "
+        f"{full_rank_cosine_error:.3e}"
+    )
+    print(f"Saved outputs to: {OUTPUT_DIR}")
+
+
+if __name__ == "__main__":
+    main()
 \end{lstlisting}
 
 \chapter{Command-line Output}
@@ -1558,5 +2127,25 @@ Document pair | TF-IDF cosine | LSA cosine
 08_archive_proposal.txt <-> 10_club_treasury.txt | 0.4310 | 0.4732
 09_archive_workflow.txt <-> 10_club_treasury.txt | 0.4761 | 0.5372
 \end{verbatim}
+
+\section{Third experiment: recorded precision summary}
+\begin{verbatim}
+$ python -m experiments.experiment_big
+Documents: 250
+Vocabulary: 6479
+Numerical rank: 250
+
+Method          | Mean precision@5
+----------------|-----------------
+TF-IDF          | 0.4976
+LSA k=5         | 0.2848
+LSA k=10        | 0.4296
+LSA k=20        | 0.4864
+LSA k=50        | 0.4928
+LSA k=250       | 0.4976
+
+Full-rank maximum cosine difference: 2.226e-14
+\end{verbatim}
+The residual above is from the committed result file. Reruns reproduced the precision summary but may give a slightly different rounding-level residual.
 
 \end{document}
