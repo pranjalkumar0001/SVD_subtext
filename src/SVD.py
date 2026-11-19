@@ -11,11 +11,11 @@ def svd_from_gram(matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarra
     Returns
     -------
     U : np.ndarray, Left singular vectors, shape (m, r), orthonormal.
-    s : np.ndarray, Positive singular values in descending order, shape (r, r), diagonal matrix.
+    Sigma : np.ndarray, Positive singular values in descending order, shape (r, r), diagonal matrix.
     Vt : np.ndarray, Transposed right singular vectors, shape (r, n), orthonormal.
 
     Here r is the estimated numerical rank. Reconstruction:
-        matrix ≈ (U * s) @ Vt
+        matrix ≈ U @ Sigma @ Vt
 
     Notes
     -----
