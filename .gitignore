@@ -17,3 +17,7 @@ __pycache__/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# real dataset files
+.cache/
+Data/20newsgroups/
